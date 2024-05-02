@@ -131,10 +131,10 @@ Taking for example the definition of the first router r1, is possible to break d
 ```
 This line defines the first three hosts (h1-h3) that goes respectively on the port 2, 3 and 4. 
 ```
-				"00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
-                "00:00:00:00:00:06": 1, "00:00:00:00:00:07": 1,
-                "00:00:00:00:00:08": 1, "00:00:00:00:00:09": 1,"00:00:00:00:00:0a": 1
-                }
+"00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
+"00:00:00:00:00:06": 1, "00:00:00:00:00:07": 1,
+"00:00:00:00:00:08": 1, "00:00:00:00:00:09": 1,"00:00:00:00:00:0a": 1
+}
 ```
 The last lines defines all the other host configured inside the network to go on the port 1, which is the port that connects r1 and r2. 
 With this kind of definition, is possible to map the destinations using the MAC. With this, the topology is defined and the hosts are linked as such:
