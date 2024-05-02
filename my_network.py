@@ -73,7 +73,7 @@ if __name__ == "__main__":
     net.start()
 
     # subprocess.call("./all_scenario.sh")
-    subprocess.call("./2_operator_scenario.sh")
+    # subprocess.call("./2_operator_scenario.sh")
 
     CLI(net)
     net.stop()

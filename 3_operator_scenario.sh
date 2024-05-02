@@ -1,18 +1,20 @@
 #!/bin/sh
 
 
-# Creating 2 virtual queues in Router 1.
+# Creating 3 virtual queues in Router 1.
 echo ' ---------------------------------------------- '
-echo '*** Creating 2 slices of 5 Gbps ...'
+echo '*** Creating 3 slices of 5 Gbps ...'
 echo 'Router1:'
 sudo ovs-vsctl -- \
 set port r1-eth1 qos=@newqos -- \
 --id=@newqos create QoS type=linux-htb \
-other-config:max-rate=1G \
+other-config:max-rate=10G \
 queues:1=@1q \
-queues:2=@2q -- \
+queues:2=@1q \
+queues:3=@2q -- \
 --id=@1q create queue other-config:min-rate=1M other-config:max-rate=5G -- \
---id=@2q create queue other-config:min-rate=1M other-config:max-rate=5G
+--id=@2q create queue other-config:min-rate=1M other-config:max-rate=5G -- \
+--id=@3q create queue other-config:min-rate=1M other-config:max-rate=5G
 
 echo ' '
 
@@ -22,11 +24,13 @@ sudo ovs-vsctl -- \
 set port r2-eth1 qos=@newqos -- \
 set port r2-eth2 qos=@newqos -- \
 --id=@newqos create QoS type=linux-htb \
-other-config:max-rate=1G \
+other-config:max-rate=10G \
 queues:1=@1q \
-queues:2=@2q -- \
+queues:2=@1q \
+queues:3=@2q -- \
 --id=@1q create queue other-config:min-rate=1M other-config:max-rate=5G -- \
---id=@2q create queue other-config:min-rate=1M other-config:max-rate=5G
+--id=@2q create queue other-config:min-rate=1M other-config:max-rate=5G -- \
+--id=@3q create queue other-config:min-rate=1M other-config:max-rate=5G
 
 echo ' '
 
@@ -34,24 +38,14 @@ echo ' '
 echo 'Router3:'
 sudo ovs-vsctl -- \
 set port r3-eth1 qos=@newqos -- \
-set port r3-eth2 qos=@newqos -- \
 --id=@newqos create QoS type=linux-htb \
-other-config:max-rate=10M \
+other-config:max-rate=1G \
 queues:1=@1q \
-queues:2=@2q -- \
---id=@1q create queue other-config:min-rate=1M other-config:max-rate=5M -- \
---id=@2q create queue other-config:min-rate=1M other-config:max-rate=5M
-
-# Creating 2 virtual queues in Router 4.
-echo 'Router4:'
-sudo ovs-vsctl -- \
-set port r4-eth1 qos=@newqos -- \
---id=@newqos create QoS type=linux-htb \
-other-config:max-rate=1M0 \
-queues:1=@1q \
-queues:2=@2q -- \
---id=@1q create queue other-config:min-rate=1M other-config:max-rate=5M -- \
---id=@2q create queue other-config:min-rate=1M other-config:max-rate=5M
+queues:2=@1q \
+queues:3=@2q -- \
+--id=@1q create queue other-config:min-rate=1M other-config:max-rate=1G -- \
+--id=@2q create queue other-config:min-rate=1M other-config:max-rate=1G -- \
+--id=@3q create queue other-config:min-rate=1M other-config:max-rate=1G
 
 echo '*** End of Creating the Slices ...'
 echo ' ---------------------------------------------- '
