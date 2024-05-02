@@ -9,6 +9,7 @@ In this repo is presented our implementation.
 
 
 A multi-hop technology has been used for this emulation, i.e., we assume that there are X hosts (h1-hX) and Y routers (r1-rY) in the network:
+
 ![Base Topology Image](img/base_topology.png)
 Therefore, multiple scenario has been made, with different numbers of slices:
 ![1 Operators Topology Image](img/1_op_topology.png)
