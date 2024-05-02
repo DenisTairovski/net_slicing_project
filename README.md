@@ -10,6 +10,7 @@ In this repo is presented our implementation.
 
 A multi-hop technology has been used for this emulation, i.e., we assume that there are X hosts (h1-hX) and Y routers (r1-rY) in the network:
 
+
 (mettere immagine)
 
 ## Project Description: Emergency Network Slicing ##
@@ -93,7 +94,6 @@ Start listening on the h6 as server and use h3 as client:
 (da aggiungere)
 
 ## Implementation Details ##
-(da aggiungere)
 In the project, a said number of slices is considered. Firstly, the tests has been done in a "Non Emergency" Scenario, in order to check the correct implementation of the connectivity between the host that needs to communicate. Therefore, each router will drop the packets that are not inside a predefined connection. 
 
 The routes are defined manually inside the "network_slicing.py" file, in the following way:
@@ -120,6 +120,18 @@ The routes are defined manually inside the "network_slicing.py" file, in the fol
                 "00:00:00:00:00:08": 2, "00:00:00:00:00:09": 3, "00:00:00:00:00:0a": 4},
         }
 ```
+Taking for example the definition of the first router r1, is possible to break down the definition:
+```
+1: {"00:00:00:00:00:01": 2, "00:00:00:00:00:02": 3, "00:00:00:00:00:03": 4,
+```
+This line defines the first three hosts (h1-h3) that goes respectively on the port 2, 3 and 4. 
+```
+				"00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
+                "00:00:00:00:00:06": 1, "00:00:00:00:00:07": 1,
+                "00:00:00:00:00:08": 1, "00:00:00:00:00:09": 1,"00:00:00:00:00:0a": 1
+                }
+```
+The last lines defines all the other host configured inside the network to go on the port 1, which is the port that connects r1 and r2. 
 With this kind of definition, is possible to map the destinations using the MAC. With this, the topology is defined and the hosts are linked as such:
 
 ```
@@ -161,7 +173,7 @@ sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.1,nw_dst=10.0.0.7,idl
 ```
 Meanwhile, all the other connections to the other host should be blocked by dropping the packets. This should be done for each connection that is defined, which should make the system work. 
 
-It is worth noticing that the "2_operator_scenario.sh" overrides the configurations for the routers set by "all_scenario.sh" in terms of the speed of the connections. 
+It is worth noticing that the "2_operator_scenario.sh" and the "3_operator_scenario.sh" overrides the configurations for the routers set by "all_scenario.sh" in terms of the speed of the connections. 
 ### Contributing
 
 The Contributors of this project are the following:
