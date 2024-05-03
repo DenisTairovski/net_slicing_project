@@ -149,7 +149,8 @@ class Slicing(app_manager.RyuApp):
     def timer(self):
         while True:
             self.change_scenario(
-                random.choice(list(Scenario))
+                #random.choice(list(Scenario))
+                Scenario.THREE_OP
             )
 
             time.sleep(120)
