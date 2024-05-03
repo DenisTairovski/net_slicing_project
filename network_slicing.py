@@ -152,6 +152,8 @@ class Slicing(app_manager.RyuApp):
                 #random.choice(list(Scenario))
                 Scenario.THREE_OP
             )
+            # should be random...
+            self.simulate_fault_recovery()
 
             time.sleep(120)
             print(' ')
@@ -178,3 +180,13 @@ class Slicing(app_manager.RyuApp):
             subprocess.call("./3_operator_scenario.sh")
 
         print('---------- CONFIGURED ----------')
+
+    def simulate_fault_recovery(self):
+        print()
+        print('++++++++++ BROKEN LINK ++++++++++')
+        print("simulate link fault by disabling connection between router r# and r#...")
+        print("restore network functionality by activating alternative links between r# and r#...")
+        subprocess.call("./fault_and_recovery.sh")
+        # change the mac_to port and/or the port_to_port matrix
+        # to reflect new forwarding rules
+        print("++++++++++ RECOVERY COMPLETED ++++++++++")
