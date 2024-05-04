@@ -1,6 +1,9 @@
 #!/bin/sh
-sudo ovs-vsctl set interface r2-eth3 admin_state=down
-sudo ovs-vsctl set interface r4-eth1 admin_state=down
+
+sudo ovs-vsctl set interface r3-eth1 admin_state=down
+sudo ovs-vsctl set interface r2-eth2 admin_state=down
+# Create mapping for the topology with the recovery links
+
 # Creating 3 virtual queues in Router 1.
 echo ' ---------------------------------------------- '
 echo '*** Creating 3 slices of 5 Gbps ...'
@@ -22,7 +25,7 @@ echo ' '
 echo 'Router2:'
 sudo ovs-vsctl -- \
 set port r2-eth1 qos=@newqos -- \
-set port r2-eth2 qos=@newqos -- \
+set port r2-eth3 qos=@newqos -- \
 --id=@newqos create QoS type=linux-htb \
 other-config:max-rate=10G \
 queues:1=@1q \
@@ -37,7 +40,6 @@ echo ' '
 # Creating 3 virtual queues in Router 3.
 echo 'Router3:'
 sudo ovs-vsctl -- \
-set port r3-eth1 qos=@newqos -- \
 set port r3-eth2 qos=@newqos -- \
 --id=@newqos create QoS type=linux-htb \
 other-config:max-rate=10G \
@@ -52,6 +54,7 @@ echo ' '
 
 echo 'Router4:'
 sudo ovs-vsctl -- \
+set port r4-eth2 qos=@newqos -- \
 set port r4-eth1 qos=@newqos -- \
 --id=@newqos create QoS type=linux-htb \
 other-config:max-rate=10G \
@@ -70,7 +73,7 @@ echo ' ---------------------------------------------- '
 # Mapping the r1 virtual queues to hosts:
 # ------------------------------------------
 # First operator
-# (h1, h4) --> queue1 
+# (h1, h4) --> queue1
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.1,nw_dst=10.0.0.4,idle_timeout=0,actions=set_queue:1,normal
 # (h1, h5) --> queue1
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.1,nw_dst=10.0.0.5,idle_timeout=0,actions=set_queue:1,normal
@@ -89,7 +92,7 @@ sudo ovs-ofctl add-flow r2 ip,priority=65500,nw_src=10.0.0.5,nw_dst=10.0.0.9,idl
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.3,nw_dst=10.0.0.6,idle_timeout=0,actions=set_queue:2,normal
 # ---------------------------------------
 # Third operator
-# (h2, h10) --> queue3 
+# (h2, h10) --> queue3
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.2,nw_dst=10.0.0.7,idle_timeout=0,actions=set_queue:3,normal
 # (h2, h7) --> queue3
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.2,nw_dst=10.0.0.10,idle_timeout=0,actions=set_queue:3,normal
@@ -125,7 +128,7 @@ sudo ovs-ofctl add-flow r4 ip,priority=65500,nw_src=10.0.0.9,nw_dst=10.0.0.6,idl
 sudo ovs-ofctl add-flow r4 ip,priority=65500,nw_src=10.0.0.9,nw_dst=10.0.0.7,idle_timeout=0,actions=drop
 sudo ovs-ofctl add-flow r4 ip,priority=65500,nw_src=10.0.0.9,nw_dst=10.0.0.10,idle_timeout=0,actions=drop
 # Second Operator
-# h3 
+# h3
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.3,nw_dst=10.0.0.1,idle_timeout=0,actions=drop
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.3,nw_dst=10.0.0.2,idle_timeout=0,actions=drop
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.3,nw_dst=10.0.0.4,idle_timeout=0,actions=drop
@@ -141,8 +144,8 @@ sudo ovs-ofctl add-flow r3 ip,priority=65500,nw_src=10.0.0.6,nw_dst=10.0.0.5,idl
 sudo ovs-ofctl add-flow r3 ip,priority=65500,nw_src=10.0.0.6,nw_dst=10.0.0.7,idle_timeout=0,actions=drop
 sudo ovs-ofctl add-flow r3 ip,priority=65500,nw_src=10.0.0.6,nw_dst=10.0.0.9,idle_timeout=0,actions=drop
 sudo ovs-ofctl add-flow r3 ip,priority=65500,nw_src=10.0.0.6,nw_dst=10.0.0.10,idle_timeout=0,actions=drop
-# Third Operator 
-# h2 
+# Third Operator
+# h2
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.2,nw_dst=10.0.0.1,idle_timeout=0,actions=drop
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.2,nw_dst=10.0.0.3,idle_timeout=0,actions=drop
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.2,nw_dst=10.0.0.4,idle_timeout=0,actions=drop

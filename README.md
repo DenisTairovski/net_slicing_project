@@ -140,10 +140,25 @@ The last lines defines all the other host configured inside the network to go on
 With this kind of definition, is possible to map the destinations using the MAC. With this, the topology is defined and the hosts are linked as such:
 
 ```
-Output of net
+h1 h1-eth0:r1-eth2
+h2 h2-eth0:r1-eth3
+h3 h3-eth0:r1-eth4
+h4 h4-eth0:r2-eth4
+h5 h5-eth0:r2-eth5
+h6 h6-eth0:r3-eth3
+h7 h7-eth0:r3-eth4
+h8 h8-eth0:r4-eth3
+h9 h9-eth0:r4-eth4
+h10 h10-eth0:r4-eth5
+r1 lo:  r1-eth1:r2-eth1 r1-eth2:h1-eth0 r1-eth3:h2-eth0 r1-eth4:h3-eth0
+r2 lo:  r2-eth1:r1-eth1 r2-eth2:r3-eth1 r2-eth3:r4-eth2 r2-eth4:h4-eth0 r2-eth5:h5-eth0
+r3 lo:  r3-eth1:r2-eth2 r3-eth2:r4-eth1 r3-eth3:h6-eth0 r3-eth4:h7-eth0
+r4 lo:  r4-eth1:r3-eth2 r4-eth2:r2-eth3 r4-eth3:h8-eth0 r4-eth4:h9-eth0 r4-eth5:h10-eth0
+c0
+
 ```
 
-Having defined the destination, is crucial to define the mapping of the ports:
+Having defined the destinations, is crucial to define the mapping of the ports:
 ```
 self.port_to_port = {
             1: {2: 1, 3: 1, 4: 1},
@@ -154,9 +169,11 @@ self.port_to_port = {
 ```
 Above can be seen an early stage of the port mapping. Is worth nothing that there are 4 routers and many hosts. Only two routers are properly defined, since the router r1 and r4 are the only two with only one connection to another router (r2 for r1, r3 for r4). Therefore, the port mapping is done only on those two, since r2 and r3 have multiple connections. 
 
-Emergency Scenario
+### Emergency Scenario ###
+Da riscrivere
+
 The emergency scenario can be thought as a scenario where two operators are involved, each for a specific slice.
-When the emergency scenario is involed, each router defines two slices:
+When the emergency scenario is involved, each router defines two slices:
 ```
 echo ' ---------------------------------------------- '
 echo '*** Creating 2 slices of 5 Gbps ...'

@@ -33,7 +33,7 @@ class Slicing(app_manager.RyuApp):
                 "00:00:00:00:00:08": 1, "00:00:00:00:00:09": 1, "00:00:00:00:00:0a": 1
                 },
             2: {"00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
-                "00:00:00:00:00:04": 3, "00:00:00:00:00:05": 4,
+                "00:00:00:00:00:04": 4, "00:00:00:00:00:05": 5,
                 "00:00:00:00:00:06": 2, "00:00:00:00:00:07": 2,
                 "00:00:00:00:00:08": 2, "00:00:00:00:00:09": 2, "00:00:00:00:00:0a": 2
                 },
@@ -45,7 +45,7 @@ class Slicing(app_manager.RyuApp):
             4: {"00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
                 "00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
                 "00:00:00:00:00:06": 1, "00:00:00:00:00:07": 1,
-                "00:00:00:00:00:08": 2, "00:00:00:00:00:09": 3, "00:00:00:00:00:0a": 4},
+                "00:00:00:00:00:08": 3, "00:00:00:00:00:09": 4, "00:00:00:00:00:0a": 5},
         }
 
         self.emergency = 0  # Boolean that indicates the presence of an emergency scenario
@@ -59,14 +59,7 @@ class Slicing(app_manager.RyuApp):
         self.threadd.daemon = True
         self.threadd.start()
 
-        # # Source Mapping
-        self.port_to_port = {
-            1: {2: 1, 3: 1, 4: 1},
-            # 2: {2: 1, 3: 1},
-            # 3: {2: 1, 3: 1},
-            4: {2: 1, 3: 1, 4: 1},
-        }
-        # self.end_swtiches = [1, 2, 3, 4]
+        self.end_switches = [1, 4]
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -149,13 +142,14 @@ class Slicing(app_manager.RyuApp):
     def timer(self):
         while True:
             self.change_scenario(
-                #random.choice(list(Scenario))
-                Scenario.THREE_OP
+                random.choice(list(Scenario))
+                #Scenario.EMERGENCY
             )
-            # should be random...
-            self.simulate_fault_recovery()
-
-            time.sleep(120)
+            # Random call for the simulate fault recovery scenario
+            if random.randint(0, 10) == 1: (
+                self.simulate_fault_recovery(Scenario)
+            )
+            time.sleep(30)
             print(' ')
             self.time = time.time()
 
@@ -168,8 +162,7 @@ class Slicing(app_manager.RyuApp):
 
         if scenario == Scenario.ONE_OP:
             print('********** 1 OPERATOR **********')
-            # subprocess.call("")
-            print("not implemented")
+            subprocess.call("./1_operator_scenario.sh")
 
         if scenario == Scenario.TWO_OP:
             print('********** 2 OPERATOR **********')
@@ -181,12 +174,52 @@ class Slicing(app_manager.RyuApp):
 
         print('---------- CONFIGURED ----------')
 
-    def simulate_fault_recovery(self):
+    def simulate_fault_recovery(self, scenario):
         print()
         print('++++++++++ BROKEN LINK ++++++++++')
-        print("simulate link fault by disabling connection between router r# and r#...")
-        print("restore network functionality by activating alternative links between r# and r#...")
-        subprocess.call("./fault_and_recovery.sh")
+        # Change address mapping to accomodate the fault link scenario
+        self.mac_to_port = {
+            1: {"00:00:00:00:00:01": 2, "00:00:00:00:00:02": 3, "00:00:00:00:00:03": 4,
+                "00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
+                "00:00:00:00:00:06": 1, "00:00:00:00:00:07": 1,
+                "00:00:00:00:00:08": 1, "00:00:00:00:00:09": 1, "00:00:00:00:00:0a": 1
+                },
+            2: {"00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
+                "00:00:00:00:00:04": 4, "00:00:00:00:00:05": 5,
+                "00:00:00:00:00:06": 3, "00:00:00:00:00:07": 3,
+                "00:00:00:00:00:08": 3, "00:00:00:00:00:09": 3, "00:00:00:00:00:0a": 3
+                },
+            3: {"00:00:00:00:00:01": 2, "00:00:00:00:00:02": 2, "00:00:00:00:00:03": 2,
+                "00:00:00:00:00:04": 2, "00:00:00:00:00:05": 2,
+                "00:00:00:00:00:06": 3, "00:00:00:00:00:07": 4,
+                "00:00:00:00:00:08": 2, "00:00:00:00:00:09": 2, "00:00:00:00:00:0a": 2
+                },
+            4: {"00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
+                "00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
+                "00:00:00:00:00:06": 2, "00:00:00:00:00:07": 2,
+                "00:00:00:00:00:08": 3, "00:00:00:00:00:09": 4, "00:00:00:00:00:0a": 5},
+        }
+        self.end_switches = [1, 3]
+        print("Simulate link fault by disabling connection between router r2 and r3")
+        print("Restore network functionality by activating alternative links between r2 and r4...")
+
+        if scenario == Scenario.EMERGENCY:
+            print('********** EMERGENCY RECOVERY **********')
+            subprocess.call("./EM_op_fault_and_recovery.sh")
+
+        if scenario == Scenario.ONE_OP:
+            print('********** 1 OPERATOR RECOVERY **********')
+            subprocess.call("./1_op_fault_and_recovery.sh")
+
+        if scenario == Scenario.TWO_OP:
+            print('********** 2 OPERATOR RECOVERY **********')
+            subprocess.call("./2_op_fault_and_recovery.sh")
+
+        if scenario == Scenario.THREE_OP:
+            print('********** 3 OPERATOR RECOVERY**********')
+            subprocess.call("./3_op_fault_and_recovery.sh")
+
         # change the mac_to port and/or the port_to_port matrix
         # to reflect new forwarding rules
         print("++++++++++ RECOVERY COMPLETED ++++++++++")
+

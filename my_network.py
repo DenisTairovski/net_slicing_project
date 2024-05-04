@@ -26,12 +26,11 @@ class Topology(Topo):
         # Create 10 host nodes
         for i in range(10):
             self.addHost("h%d" % (i + 1), **host_config) # We choose 'h' because 'c' is the controller
-            
-
 
         # Add router link
         self.addLink("r1", "r2", **link_config)
         self.addLink("r2", "r3", **link_config)
+        self.addLink("r2", "r4", **link_config)
         self.addLink("r3", "r4", **link_config)
 
         # Add clients-router1 links
