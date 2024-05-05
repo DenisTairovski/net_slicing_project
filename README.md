@@ -1,4 +1,4 @@
-# Network Slicing Project#
+# Network Slicing Project #
 
 ## Short Introduction ##
 This is the project #1 for Networking 2 Course held by Fabrizio Granelli. The objective is to implement by demonstration a network slicing strategy, which is able to adapt in case of an emergency situation within the Comnetsemu environment. The Comnetsemu source code can be found [here](https://git.comnets.net/public-repo/comnetsemu.git). 
