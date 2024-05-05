@@ -1,19 +1,16 @@
 import random
+import subprocess
+import threading
+import time
 
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
 from ryu.controller.handler import set_ev_cls
-from ryu.ofproto import ofproto_v1_3
-from ryu.lib.packet import packet
-from ryu.lib.packet import ethernet
 from ryu.lib.packet import ether_types
-from ryu.lib.packet import udp
-from ryu.lib.packet import tcp
-from ryu.lib.packet import icmp
-import subprocess
-import time
-import threading
+from ryu.lib.packet import ethernet
+from ryu.lib.packet import packet
+from ryu.ofproto import ofproto_v1_3
 
 from enum_scenario import Scenario
 
@@ -24,37 +21,51 @@ class Slicing(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(Slicing, self).__init__(*args, **kwargs)
 
-        # Destination Mapping for each router a dict is provided, with the associations of each MAC address and the
+        # Destination Mapping for each router: a dict is provided, with the associations of each MAC address and the
         # corresponding output port
         self.mac_to_port = {
-            1: {"00:00:00:00:00:01": 2, "00:00:00:00:00:02": 3, "00:00:00:00:00:03": 4,
+            # router 1
+            1: {
+                # host 1, 2 and 3 directly connected
+                "00:00:00:00:00:01": 2, "00:00:00:00:00:02": 3, "00:00:00:00:00:03": 4,
+                # all other hosts are reachable through port 1
                 "00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
                 "00:00:00:00:00:06": 1, "00:00:00:00:00:07": 1,
                 "00:00:00:00:00:08": 1, "00:00:00:00:00:09": 1, "00:00:00:00:00:0a": 1
-                },
-            2: {"00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
+            },
+            # router 2
+            2: {
+                # host 1, 2 and 3 are reachable through port 1
+                "00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
+                # host 4 and 5 directly connected
                 "00:00:00:00:00:04": 4, "00:00:00:00:00:05": 5,
+                # all other hosts are reachable through port 2
                 "00:00:00:00:00:06": 2, "00:00:00:00:00:07": 2,
                 "00:00:00:00:00:08": 2, "00:00:00:00:00:09": 2, "00:00:00:00:00:0a": 2
-                },
-            3: {"00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
+            },
+            # router 3
+            3: {
+                # host 1-5 are reachable through port 1
+                "00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
                 "00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
+                # host 6 and 7 directly connected
                 "00:00:00:00:00:06": 3, "00:00:00:00:00:07": 4,
+                # all other hosts are reachable through port 2
                 "00:00:00:00:00:08": 2, "00:00:00:00:00:09": 2, "00:00:00:00:00:0a": 2
-                },
-            4: {"00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
+            },
+            # router 4
+            4: {
+                # all other hosts are reachable through port 1
+                "00:00:00:00:00:01": 1, "00:00:00:00:00:02": 1, "00:00:00:00:00:03": 1,
                 "00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
                 "00:00:00:00:00:06": 1, "00:00:00:00:00:07": 1,
+                # host 8, 9 and 10 directly connected
                 "00:00:00:00:00:08": 3, "00:00:00:00:00:09": 4, "00:00:00:00:00:0a": 5},
         }
 
-        self.emergency = 0  # Boolean that indicates the presence of an emergency scenario
         self.time = time.time()  # Timer that keeps track of time for an emergency scenario
 
-        self.print_flag = 0  # Helper variable that helps us with printing/output
-
-        # Creation of an additional thread that automates the process for Emergecy Scenario and Normal Scenario!
-        # Listens to the timer() function.
+        # Creation of an additional thread that automates the alternation of Scenarios
         self.threadd = threading.Thread(target=self.timer, args=())
         self.threadd.daemon = True
         self.threadd.start()
@@ -119,41 +130,33 @@ class Slicing(app_manager.RyuApp):
         dpid = datapath.id
 
         if dpid in self.mac_to_port:
-            if (self.emergency == 1):  # Emergency Scenario - Create New Topology
-
-                if dst in self.mac_to_port[dpid]:
-                    out_port = self.mac_to_port[dpid][dst]
-                    actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
-                    match = datapath.ofproto_parser.OFPMatch(eth_dst=dst)
-                    self.add_flow(datapath, 1, match, actions)
-                    self._send_package(msg, datapath, in_port, actions)
-
-
-
-            else:
-                if dst in self.mac_to_port[dpid]:
-                    out_port = self.mac_to_port[dpid][dst]
-                    actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
-                    match = datapath.ofproto_parser.OFPMatch(eth_dst=dst)
-                    self.add_flow(datapath, 1, match, actions)
-                    self._send_package(msg, datapath, in_port, actions)
+            if dst in self.mac_to_port[dpid]:
+                out_port = self.mac_to_port[dpid][dst]
+                actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
+                match = datapath.ofproto_parser.OFPMatch(eth_dst=dst)
+                self.add_flow(datapath, 1, match, actions)
+                self._send_package(msg, datapath, in_port, actions)
 
     # Function that automates the alternation between Emergency and Non-Emergency Scenario
     def timer(self):
         while True:
             self.change_scenario(
                 random.choice(list(Scenario))
-                #Scenario.EMERGENCY
             )
-            # Random call for the simulate fault recovery scenario
-            if random.randint(0, 10) == 1: (
+            # Random call to simulate fault recovery scenario
+            if random.randint(0, 10) == 1:
                 self.simulate_fault_recovery(Scenario)
-            )
+
             time.sleep(120)
             print(' ')
             self.time = time.time()
 
     def change_scenario(self, scenario):
+        """
+        Execute related .sh files based on the given scenario
+
+        :param scenario: Indicates the type of Scenario
+        """
         print()
 
         if scenario == Scenario.EMERGENCY:
@@ -175,6 +178,12 @@ class Slicing(app_manager.RyuApp):
         print('---------- CONFIGURED ----------')
 
     def simulate_fault_recovery(self, scenario):
+        """
+        Simulate the presence of a broken link and updates the mac_to_port dictionary to reflect changes in the
+        routing table
+
+        :param scenario: Indicates the type of Scenario
+        """
         print()
         print('++++++++++ BROKEN LINK ++++++++++')
         # Change address mapping to accomodate the fault link scenario
@@ -222,4 +231,3 @@ class Slicing(app_manager.RyuApp):
         # change the mac_to port and/or the port_to_port matrix
         # to reflect new forwarding rules
         print("++++++++++ RECOVERY COMPLETED ++++++++++")
-

@@ -1,10 +1,11 @@
 #!/bin/sh
+
 # Create mapping for the topology with the recovery links
 sudo ovs-vsctl set interface r3-eth1 admin_state=down
 sudo ovs-vsctl set interface r2-eth2 admin_state=down
-# Creating 3 virtual queues in Router 1.
+# Creating 2 virtual queues in Router 1.
 echo ' ---------------------------------------------- '
-echo '*** Creating 3 slices of 5 Gbps ...'
+echo '*** Creating 2 slices of 5 Gbps ...'
 echo 'Router1:'
 sudo ovs-vsctl -- \
 set port r1-eth1 qos=@newqos -- \
@@ -18,7 +19,7 @@ queues:3=@3q -- \
 
 echo ' '
 
-# Creating 3 virtual queues in Router 2.
+# Creating 2 virtual queues in Router 2.
 echo 'Router2:'
 sudo ovs-vsctl -- \
 set port r2-eth1 qos=@newqos -- \
@@ -33,7 +34,7 @@ queues:3=@3q -- \
 
 echo ' '
 
-# Creating 3 virtual queues in Router 3.
+# Creating 2 virtual queues in Router 3.
 echo 'Router3:'
 sudo ovs-vsctl -- \
 set port r3-eth2 qos=@newqos -- \

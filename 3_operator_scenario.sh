@@ -1,9 +1,10 @@
 #!/bin/sh
+
 sudo ovs-vsctl set interface r2-eth3 admin_state=down
 sudo ovs-vsctl set interface r4-eth1 admin_state=down
 # Creating 3 virtual queues in Router 1.
 echo ' ---------------------------------------------- '
-echo '*** Creating 3 slices of 5 Gbps ...'
+echo '*** Creating 3 slices of 3 Gbps ...'
 echo 'Router1:'
 sudo ovs-vsctl -- \
 set port r1-eth1 qos=@newqos -- \

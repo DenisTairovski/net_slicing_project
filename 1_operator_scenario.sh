@@ -3,9 +3,9 @@
 #sudo ovs-vsctl set interface r3-eth1 admin_state=down
 sudo ovs-vsctl set interface r2-eth3 admin_state=down
 sudo ovs-vsctl set interface r4-eth1 admin_state=down
-# Creating 1 virtual queues in Router 1.
+# Creating 1 virtual queue in Router 1.
 echo ' ---------------------------------------------- '
-echo '*** Creating 1 slices of 5 Gbps ...'
+echo '*** Creating 1 slice of 10 Gbps ...'
 echo 'Router1:'
 sudo ovs-vsctl -- \
 set port r1-eth1 qos=@newqos -- \
@@ -16,7 +16,7 @@ queues:1=@1q -- \
 
 echo ' '
 
-# Creating 2 virtual queues in Router 2.
+# Creating 1 virtual queue in Router 2.
 echo 'Router2:'
 sudo ovs-vsctl -- \
 set port r2-eth1 qos=@newqos -- \
@@ -28,7 +28,7 @@ queues:1=@1q -- \
 
 echo ' '
 
-# Creating 2 virtual queues in Router 3.
+# Creating 1 virtual queue in Router 3.
 echo 'Router3:'
 sudo ovs-vsctl -- \
 set port r3-eth1 qos=@newqos -- \
@@ -38,7 +38,7 @@ other-config:max-rate=10G \
 queues:1=@1q -- \
 --id=@1q create queue other-config:min-rate=1M other-config:max-rate=10G
 
-# Creating 2 virtual queues in Router 4.
+# Creating 1 virtual queue in Router 4.
 echo 'Router4:'
 sudo ovs-vsctl -- \
 set port r4-eth2 qos=@newqos -- \
@@ -51,7 +51,7 @@ echo '*** End of Creating the Slices ...'
 echo ' ---------------------------------------------- '
 
 
-# Mapping the r1 virtual queues to hosts:
+# Mapping the r1 virtual queue to hosts:
 # (h1, h4) --> queue1, (h1, h5) --> queue1, (h1, h9) --> queue1
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.1,nw_dst=10.0.0.4,idle_timeout=0,actions=set_queue:1,normal
 sudo ovs-ofctl add-flow r1 ip,priority=65500,nw_src=10.0.0.1,nw_dst=10.0.0.5,idle_timeout=0,actions=set_queue:1,normal

@@ -1,11 +1,10 @@
 #!/usr/bin/python3
 
-from mininet.topo import Topo
-from mininet.net import Mininet
-from mininet.node import OVSKernelSwitch, RemoteController
 from mininet.cli import CLI
 from mininet.link import TCLink
-import subprocess
+from mininet.net import Mininet
+from mininet.node import OVSKernelSwitch, RemoteController
+from mininet.topo import Topo
 
 
 class Topology(Topo):
@@ -15,7 +14,7 @@ class Topology(Topo):
 
         # Create template host, switch, and link
         host_config = dict(inNamespace=True)
-        link_config = dict()  # Total Capacity of the link ~ 10Mbps
+        link_config = dict()
         host_link_config = dict()
 
         # Create 4 router nodes
@@ -25,7 +24,7 @@ class Topology(Topo):
 
         # Create 10 host nodes
         for i in range(10):
-            self.addHost("h%d" % (i + 1), **host_config) # We choose 'h' because 'c' is the controller
+            self.addHost("h%d" % (i + 1), **host_config)  # We choose 'h' because 'c' is the controller
 
         # Add router link
         self.addLink("r1", "r2", **link_config)
@@ -52,27 +51,20 @@ class Topology(Topo):
         self.addLink("h10", "r4", **host_link_config)
 
 
-
-
-topos = {"topology": (lambda: Topology())}
-
 if __name__ == "__main__":
     topology = Topology()
     net = Mininet(
         topo=topology,
-        controller=RemoteController( 'c0', ip='127.0.0.1'), 
+        controller=RemoteController('c0', ip='127.0.0.1'),
         switch=OVSKernelSwitch,
         build=False,
         autoSetMacs=True,
         autoStaticArp=True,
         link=TCLink,
     )
-    
+
     net.build()
     net.start()
-
-    # subprocess.call("./all_scenario.sh")
-    # subprocess.call("./2_operator_scenario.sh")
 
     CLI(net)
     net.stop()
