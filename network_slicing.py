@@ -149,7 +149,7 @@ class Slicing(app_manager.RyuApp):
             if random.randint(0, 10) == 1: (
                 self.simulate_fault_recovery(Scenario)
             )
-            time.sleep(30)
+            time.sleep(120)
             print(' ')
             self.time = time.time()
 
