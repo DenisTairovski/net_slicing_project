@@ -25,14 +25,12 @@ The slices divide the link equally.
 With a 10% probability, a "Fault & Recovery" scenario can be activated which disables a link between r2 and r3 and activates the link between r2 and r4, in order to simulate a Recovery operation.
 ![3 Operators Topology Image](img/fault_topology.png)
 ```text
-The flow of the project is the following:
-**Step 1:** The initial network is built where the (h1, h4) and (h2, h5) communications are enabled. The first link is shared for these communications leading to equal slices. 
+The project is dynamic and continuously change as follow:
+1) The initial network is built where the connections between hosts depends on the Scenario. 
 
-**Step 2:** After K seconds the emergency scenario is activated and as a result the other hosts are also enabled. One additional slice is automatically created in the first link, whereas the initial two slices are dynamically reduced.
+2) Every K seconds (120 by default) the scenario randomly changes to one among [1 Operator, 2 Operator, 3 Operator, Emergency]. 
 
-**Step 3:** After K seconds, the emergency situation is over and as a result the third slice is deleted, and everything is back to the *Step 1* situation (where only 2 slices exist).
-
-*Note:* This process takes place in an automatic iterative manner. 
+3) At every Scenario change there is a low probability (10%) that a breakdown occurs. This triggers a "Fault and Recovery" strategy. 
 ```
 This folder contains the following files:
 1. my_network.py: Python script to build a network with X hosts, Y routers and the respective links.
