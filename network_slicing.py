@@ -21,6 +21,8 @@ class Slicing(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
         super(Slicing, self).__init__(*args, **kwargs)
 
+        self.datapaths = {}
+        self.sw_hosts = ["00:00:00:00:00:09", ]
         # Destination Mapping for each router: a dict is provided, with the associations of each MAC address and the
         # corresponding output port
         self.mac_to_port = {
@@ -64,11 +66,16 @@ class Slicing(app_manager.RyuApp):
         }
 
         self.time = time.time()  # Timer that keeps track of time for an emergency scenario
+        self.checkpoint = self.time
 
         # Creation of an additional thread that automates the alternation of Scenarios
         self.threadd = threading.Thread(target=self.timer, args=())
         self.threadd.daemon = True
         self.threadd.start()
+        # automatically clear server port forwarding
+        self.th_del = threading.Thread(target=self.clear_timer, args=())
+        self.th_del.daemon = True
+        self.th_del.start()
 
         self.end_switches = [1, 4]
 
@@ -77,6 +84,9 @@ class Slicing(app_manager.RyuApp):
         datapath = ev.msg.datapath
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
+
+        if datapath.id not in self.datapaths:
+            self.datapaths[datapath.id] = datapath
 
         # install the table-miss flow entry.
         match = parser.OFPMatch()
@@ -95,6 +105,26 @@ class Slicing(app_manager.RyuApp):
             datapath=datapath, priority=priority, match=match, instructions=inst
         )
         datapath.send_msg(mod)
+
+    def clear_timer(self):
+        while True:
+            self.delete_flows()
+            time.sleep(0.2)
+
+    def delete_flows(self):
+        # clear the flow to servers
+        for dpid in self.datapaths:
+            datapath = self.datapaths[dpid]
+            parser = datapath.ofproto_parser
+            ofproto = datapath.ofproto
+
+            # priority 3
+            for dst in self.sw_hosts:
+                match = datapath.ofproto_parser.OFPMatch(eth_dst=dst)
+                mod = parser.OFPFlowMod(datapath, command=ofproto.OFPFC_DELETE,
+                                        out_port=ofproto.OFPP_ANY, out_group=ofproto.OFPG_ANY,
+                                        priority=3, match=match)
+                datapath.send_msg(mod)
 
     def _send_package(self, msg, datapath, in_port, actions):
         data = None
@@ -132,9 +162,19 @@ class Slicing(app_manager.RyuApp):
         if dpid in self.mac_to_port:
             if dst in self.mac_to_port[dpid]:
                 out_port = self.mac_to_port[dpid][dst]
+
+                if isinstance(out_port, list):
+                    out_port = random.choice(out_port)
+
                 actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
                 match = datapath.ofproto_parser.OFPMatch(eth_dst=dst)
-                self.add_flow(datapath, 1, match, actions)
+
+                if dpid == 4:
+                    self.logger.info(actions)
+                if dst in self.sw_hosts:
+                    self.add_flow(datapath, 3, match, actions)
+                else:
+                    self.add_flow(datapath, 1, match, actions)
                 self._send_package(msg, datapath, in_port, actions)
 
     # Function that automates the alternation between Emergency and Non-Emergency Scenario
