@@ -21,7 +21,10 @@ class PortBandwidth:
 
     @property
     def bandwidth(self):
-        return self.tot_bytes / self.sec
+        if self.sec == 0:
+            return 0
+        else:
+            return self.tot_bytes / self.sec
 
     @property
     def port_id(self):
