@@ -71,7 +71,8 @@ class Slicing(app_manager.RyuApp):
         # Creation of an additional thread that automates the alternation of Scenarios
         self.threadd = threading.Thread(target=self.timer, args=())
         self.threadd.daemon = True
-        self.threadd.start()
+        # self.threadd.start()
+
         # automatically clear server port forwarding
         self.th_del = threading.Thread(target=self.clear_timer, args=())
         self.th_del.daemon = True
@@ -107,6 +108,7 @@ class Slicing(app_manager.RyuApp):
         datapath.send_msg(mod)
 
     def clear_timer(self):
+        # clear flows every 0.2 seconds
         while True:
             self.delete_flows()
             time.sleep(0.2)
@@ -163,27 +165,34 @@ class Slicing(app_manager.RyuApp):
             if dst in self.mac_to_port[dpid]:
                 out_port = self.mac_to_port[dpid][dst]
 
+                # randomly forward traffic on available ports to perform basic load balancing
                 if isinstance(out_port, list):
                     out_port = random.choice(out_port)
 
                 actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
                 match = datapath.ofproto_parser.OFPMatch(eth_dst=dst)
 
+                # print the output port of tested router for debug
                 if dpid == 4:
-                    self.logger.info(actions)
+                    self.logger.info("Out port: " + str(actions[0].port))
+
                 if dst in self.sw_hosts:
                     self.add_flow(datapath, 3, match, actions)
                 else:
                     self.add_flow(datapath, 1, match, actions)
                 self._send_package(msg, datapath, in_port, actions)
 
-    # Function that automates the alternation between Emergency and Non-Emergency Scenario
     def timer(self):
+        """
+        Function that automates the alternation between Emergency and Non-Emergency Scenario
+
+        :return:
+        """
         while True:
             self.change_scenario(
                 random.choice(list(Scenario))
             )
-            # Random call to simulate fault recovery scenario
+            # Random call to simulate fault recovery scenario (probability 10%)
             if random.randint(0, 10) == 1:
                 self.simulate_fault_recovery(Scenario)
 
@@ -201,19 +210,19 @@ class Slicing(app_manager.RyuApp):
 
         if scenario == Scenario.EMERGENCY:
             print('********** EMERGENCY **********')
-            subprocess.call("./all_scenario.sh")
+            subprocess.call("shell_script/all_scenario.sh")
 
         if scenario == Scenario.ONE_OP:
             print('********** 1 OPERATOR **********')
-            subprocess.call("./1_operator_scenario.sh")
+            subprocess.call("shell_script/1_operator_scenario.sh")
 
         if scenario == Scenario.TWO_OP:
             print('********** 2 OPERATOR **********')
-            subprocess.call("./2_operator_scenario.sh")
+            subprocess.call("shell_script/2_operator_scenario.sh")
 
         if scenario == Scenario.THREE_OP:
             print('********** 3 OPERATOR **********')
-            subprocess.call("./3_operator_scenario.sh")
+            subprocess.call("shell_script/3_operator_scenario.sh")
 
         print('---------- CONFIGURED ----------')
 
@@ -226,7 +235,7 @@ class Slicing(app_manager.RyuApp):
         """
         print()
         print('++++++++++ BROKEN LINK ++++++++++')
-        # Change address mapping to accomodate the fault link scenario
+        # Change address mapping to accommodate the fault link scenario
         self.mac_to_port = {
             1: {"00:00:00:00:00:01": 2, "00:00:00:00:00:02": 3, "00:00:00:00:00:03": 4,
                 "00:00:00:00:00:04": 1, "00:00:00:00:00:05": 1,
@@ -254,19 +263,19 @@ class Slicing(app_manager.RyuApp):
 
         if scenario == Scenario.EMERGENCY:
             print('********** EMERGENCY RECOVERY **********')
-            subprocess.call("./EM_op_fault_and_recovery.sh")
+            subprocess.call("shell_script/EM_op_fault_and_recovery.sh")
 
         if scenario == Scenario.ONE_OP:
             print('********** 1 OPERATOR RECOVERY **********')
-            subprocess.call("./1_op_fault_and_recovery.sh")
+            subprocess.call("shell_script/1_op_fault_and_recovery.sh")
 
         if scenario == Scenario.TWO_OP:
             print('********** 2 OPERATOR RECOVERY **********')
-            subprocess.call("./2_op_fault_and_recovery.sh")
+            subprocess.call("shell_script/2_op_fault_and_recovery.sh")
 
         if scenario == Scenario.THREE_OP:
             print('********** 3 OPERATOR RECOVERY**********')
-            subprocess.call("./3_op_fault_and_recovery.sh")
+            subprocess.call("shell_script/3_op_fault_and_recovery.sh")
 
         # change the mac_to port and/or the port_to_port matrix
         # to reflect new forwarding rules

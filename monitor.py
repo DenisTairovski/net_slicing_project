@@ -16,8 +16,10 @@ class SimpleMonitor(Slicing):
         super(SimpleMonitor, self).__init__(*args, **kwargs)
         # router id -> port no -> [byte, sec, bw]
         self.servers_bw = {
+            # for this simple scenario we only consider the router 4
             4: RouterManager(4, 5, [1, 2])
         }
+        self.sleep_time = 10
         self.monitor_thread = hub.spawn(self._monitor)
 
     @set_ev_cls(ofp_event.EventOFPStateChange,
@@ -35,40 +37,42 @@ class SimpleMonitor(Slicing):
 
     def _monitor(self):
         while True:
-            hub.sleep(10)
-            # for port_no in self.servers_bw[4].keys():
-            #     self.servers_bw[4][port_no] = [0, 0, 0].copy()
-
-            self.servers_bw[4].clear()
-            # for router in self.servers_bw.values():
-            #     router.clear()
+            # perform monitoring every [sleep_time] seconds
+            hub.sleep(self.sleep_time)
 
             for dp in self.datapaths.values():
                 if dp.id == 4:
                     self._request_stats(dp)
+            # wait 1 second to let other routers reply with their information
             hub.sleep(1)
 
-            B = 0
-            for port in self.servers_bw[4].ports:
-                B += port.tot_bytes
-
-            # B = reduce((lambda x, y: x[0] + y[0]), self.servers_bw[4].values())
-            sec = 0
-            if len(self.servers_bw[4]) != 0:
-                sec = self.servers_bw[4].ports[0].sec
-
-            if sec != 0:
+            # current router id
+            r_id = 4
+            # check if the given router has active ports
+            if len(self.servers_bw[r_id]) != 0:
                 # Calculate actual bandwidth
-                self.logger.info("Total router <{}> bandwidth: {}B/s\n".format(4, B / sec))
+                sum_bw = 0
+                for port in self.servers_bw[r_id].ports:
+                    sum_bw += port.bandwidth
+                self.logger.info("Total router <{}> bandwidth: {:0.3f} B/s\n".format(r_id, sum_bw))
 
-                if any(port.bandwidth > 500 for port in self.servers_bw[4].ports):
+                # for simplicity, we check only the port 4 because we only ping on it
+                p1_id = 4
+                p2_id = self.servers_bw[r_id].secondary_port
+
+                p1_bw = self.servers_bw[r_id][p1_id].bandwidth
+                p2_bw = self.servers_bw[r_id][p2_id].bandwidth
+
+                # check for bandwidth demands
+                # perform transition only if the previous state is different (avoid redundant actions)
+                if p1_bw > 600 and not self.servers_bw[r_id].load_balancing:
                     self.logger.info("Link usage to high! Apply load balancing with secondary server...")
-                    self.mac_to_port[4]["00:00:00:00:00:09"] = [4, 5]
-                elif any(port.bandwidth > 400 for port in self.servers_bw[4].ports):
+                    self.mac_to_port[r_id]["00:00:00:00:00:09"] = [p1_id, p2_id]
+                    self.servers_bw[r_id].load_balancing = True
+                elif (p1_bw + p2_bw) < 500 and self.servers_bw[r_id].load_balancing:
                     self.logger.info("Link below threshold! Deactivating secondary server...")
-                    self.mac_to_port[4]["00:00:00:00:00:09"] = 4
-
-            hub.sleep(10)
+                    self.mac_to_port[r_id]["00:00:00:00:00:09"] = p1_id
+                    self.servers_bw[r_id].load_balancing = False
 
     def _request_stats(self, datapath):
         self.logger.debug('send stats request: %016x', datapath.id)
@@ -89,7 +93,8 @@ class SimpleMonitor(Slicing):
         elapsed = now - self.checkpoint
         self.checkpoint = now
 
-        if ev.msg.datapath.id == 4:
+        r_id = ev.msg.datapath.id
+        if r_id == 4:
             self.logger.info('datapath         port     '
                              'rx-pkts  rx-bytes rx-error '
                              'tx-pkts  tx-bytes tx-error')
@@ -98,15 +103,21 @@ class SimpleMonitor(Slicing):
                              '-------- -------- --------')
             for stat in sorted(body, key=attrgetter('port_no')):
                 # set max port to 100 in order to skip fffffffe port
-                if stat.port_no < 100 and stat.port_no not in self.servers_bw[ev.msg.datapath.id].ignored:
+                if stat.port_no < 100 and stat.port_no not in self.servers_bw[r_id].ignored:
                     self.logger.info('%016x %8x %8d %8d %8d %8d %8d %8d',
-                                     ev.msg.datapath.id, stat.port_no,
+                                     r_id, stat.port_no,
                                      stat.rx_packets, stat.rx_bytes, stat.rx_errors,
                                      stat.tx_packets, stat.tx_bytes, stat.tx_errors)
 
-                    port = PortBandwidth(stat.port_no)
-                    port.tot_bytes += stat.tx_bytes
-                    port.sec = elapsed
+                    # update collected data for each port
+                    try:
+                        port = self.servers_bw[r_id][stat.port_no]
+                        port.sec = elapsed
+                    except:
+                        port = PortBandwidth(stat.port_no, 0, elapsed)
+                        pass
+
+                    port.tot_bytes = stat.tx_bytes
                     self.logger.info(port)
 
-                    self.servers_bw[ev.msg.datapath.id][port.port_id] = port
+                    self.servers_bw[r_id][port.port_id] = port
